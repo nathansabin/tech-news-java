@@ -26,7 +26,9 @@ public class User implements Serializable
     @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Vote> votes;
     @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<comment> comments;
+    private List<Comment> comments;
+
+    public User(){}
 
     public User(Integer id, String username, String email, String password)
     {
