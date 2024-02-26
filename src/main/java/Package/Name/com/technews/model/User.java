@@ -73,6 +73,8 @@ public class User implements Serializable
         return this.password;
     }
 
+    public void setPassword(String password) { this.password = password; }
+
     public boolean getLoggedIn()
     {
         return this.loggedIn;

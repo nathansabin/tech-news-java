@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class NameTechNewsJavaApiApplication {
 
 	public static void main(String[] args) {
-		System.out.println(NameTechNewsJavaApiApplication.class);
+//		System.out.println(NameTechNewsJavaApiApplication.class);
 		SpringApplication.run(NameTechNewsJavaApiApplication.class, args);
 	}
 
