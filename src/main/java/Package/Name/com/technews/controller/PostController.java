@@ -8,6 +8,7 @@ import Package.Name.com.technews.repository.UserRepository;
 import Package.Name.com.technews.repository.VoteRepository;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,8 +16,11 @@ import java.util.List;
 
 @RestController
 public class PostController {
+    @Autowired
     PostRepository repository;
+    @Autowired
     VoteRepository voteRepository;
+    @Autowired
     UserRepository userRepository;
 
     @GetMapping("/api/posts")
