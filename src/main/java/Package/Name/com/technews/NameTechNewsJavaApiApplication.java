@@ -10,5 +10,4 @@ public class NameTechNewsJavaApiApplication {
 //		System.out.println(NameTechNewsJavaApiApplication.class);
 		SpringApplication.run(NameTechNewsJavaApiApplication.class, args);
 	}
-
 }
