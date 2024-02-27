@@ -34,7 +34,7 @@ public class UserController {
     }
 
     @GetMapping("/api/users/{id}")
-    public User getUserById(@PathVariable Integer id)
+    public User getUserById(@PathVariable("id") Integer id)
     {
         User returnUser = repository.getById(id);
         List<Post> postList = returnUser.getPosts();
@@ -54,7 +54,7 @@ public class UserController {
     }
 
     @PutMapping("/api/users/{id}")
-    public User updateUser(@PathVariable int id, @RequestBody User user)
+    public User updateUser(@PathVariable("id") int id, @RequestBody User user)
     {
         User tempUser = repository.getById(id);
         if (!tempUser.equals(null)) {
@@ -64,9 +64,9 @@ public class UserController {
         return user;
     }
 
-    @DeleteMapping("/api/users/${id}")
+    @DeleteMapping("/api/users/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteUser(@PathVariable int id) {
+    public void deleteUser(@PathVariable("id") int id) {
         repository.deleteById(id);
     }
 }

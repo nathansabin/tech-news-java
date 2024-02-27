@@ -22,7 +22,7 @@ public class CommentController {
     }
 
     @GetMapping("/api/comments/{id}")
-    public Comment getComment(@PathVariable int id)
+    public Comment getComment(@PathVariable("id") int id)
     {
         return repository.getById(id);
     }
@@ -40,9 +40,9 @@ public class CommentController {
         return repository.save(comment);
     }
 
-    @DeleteMapping("/api/comment/{id}")
+    @DeleteMapping("/api/comments/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteComment(@PathVariable int id)
+    public void deleteComment(@PathVariable("id") int id)
     {
         repository.deleteById(id);
     }
