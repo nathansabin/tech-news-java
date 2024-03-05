@@ -10,10 +10,14 @@ import Package.Name.com.technews.repository.VoteRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.List;
 
@@ -29,14 +33,74 @@ public class HomePageController {
     VoteRepository voteRepository;
 
     @GetMapping("/login")
-    public String login(Model model, HttpServletRequest request)
-    {
-        if (request.getSession(false) != null)
-        {
+    public String login(Model model, HttpServletRequest request) {
+
+        if (request.getSession(false) != null) {
             return "redirect:/";
         }
+
         model.addAttribute("user", new User());
         return "login";
+    }
+    @PostMapping("/users/login")
+    public String login(@ModelAttribute User user, Model model, HttpServletRequest request) throws Exception {
+
+        if ((user.getPassword().equals(null) || user.getPassword().isEmpty()) || (user.getEmail().equals(null) || user.getPassword().isEmpty())) {
+            model.addAttribute("notice", "Email address and password must be populated in order to login!");
+            return "login";
+        }
+
+        User sessionUser = userRepository.findUserByEmail(user.getEmail());
+
+        try {
+            // If sessionUser is invalid, running .equals() will throw an error
+            if (sessionUser.equals(null)) {
+
+            }
+            // We will catch an error and notify client that email address is not recognized
+        } catch (NullPointerException e) {
+            model.addAttribute("notice", "Email address is not recognized!");
+            return "login";
+        }
+
+        // Validate Password
+        String sessionUserPassword = sessionUser.getPassword();
+        boolean isPasswordValid = BCrypt.checkpw(user.getPassword(), sessionUserPassword);
+        if(isPasswordValid == false) {
+            model.addAttribute("notice", "Password is not valid!");
+            return "login";
+        }
+
+        sessionUser.setLoggedIn(true);
+        request.getSession().setAttribute("SESSION_USER", sessionUser);
+
+        return "redirect:/dashboard";
+    }
+    @PostMapping("/users")
+    public String signup(@ModelAttribute User user, Model model, HttpServletRequest request) throws Exception {
+        if ((user.getUsername().equals(null) || user.getUsername().isEmpty()) || (user.getPassword().equals(null) || user.getPassword().isEmpty()) || (user.getEmail().equals(null) || user.getPassword().isEmpty())) {
+            model.addAttribute("notice", "In order to signup username, email address and password must be populated!");
+            return "login";
+        }
+        try {
+            // Encrypt password
+            user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()));
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            model.addAttribute("notice", "Email address is not available! Please choose a different unique email address.");
+            return "login";
+        }
+        User sessionUser = userRepository.findUserByEmail(user.getEmail());
+        try {
+            if (sessionUser.equals(null)) {
+            }
+        } catch (NullPointerException e) {
+            model.addAttribute("notice", "User is not recognized!");
+            return "login";
+        }
+        sessionUser.setLoggedIn(true);
+        request.getSession().setAttribute("SESSION_USER", sessionUser);
+        return "redirect:/dashboard";
     }
 
     @GetMapping("/users/logout")
@@ -50,30 +114,28 @@ public class HomePageController {
     }
 
     @GetMapping("/")
-    public String homepageSetup(Model model, HttpServletRequest request)
-    {
+    public String homepageSetup(Model model, HttpServletRequest request) {
         User sessionUser = new User();
 
-        if (request.getSession(false) != null)
-        {
-            model.addAttribute("loggedIn", sessionUser.getLoggedIn() );
-        }
-        else
-        {
+        if (request.getSession(false) != null) {
+            sessionUser = (User) request.getSession().getAttribute("SESSION_USER");
+            model.addAttribute("loggedIn", sessionUser.getLoggedIn());
+        } else {
             model.addAttribute("loggedIn", false);
         }
 
+
         List<Post> postList = postRepository.findAll();
-        for (Post p : postList)
-        {
+        for (Post p : postList) {
             p.setVoteCount(voteRepository.countVotesByPostId(p.getId()));
-            User user = userRepository.getReferenceById(p.getUserId());
+            User user = userRepository.getById(p.getUserId());
             p.setUserName(user.getUsername());
         }
 
         model.addAttribute("postList", postList);
         model.addAttribute("loggedIn", sessionUser.getLoggedIn());
 
+        // "point" and "points" attributes refer to upvotes.
         model.addAttribute("point", "point");
         model.addAttribute("points", "points");
 
@@ -82,16 +144,12 @@ public class HomePageController {
 
     @GetMapping("/dashboard")
     public String dashboardPageSetup(Model model, HttpServletRequest request) throws Exception {
-        {
-            if (request.getSession(false) != null) {
-                setupDashboardPage(model, request);
-                return  "dashboard";
-            }
-            else
-            {
-                model.addAttribute("user", new User());
-                return "login";
-            }
+        if (request.getSession(false) != null) {
+            setupDashboardPage(model, request);
+            return "dashboard";
+        } else {
+            model.addAttribute("user", new User());
+            return "login";
         }
     }
 
@@ -147,25 +205,20 @@ public class HomePageController {
         }
     }
 
-    public Model setupDashboardPage(Model model, HttpServletRequest request) throws Exception
-    {
-            User sessionUser = (User) request.getSession().getAttribute("SESSION_USER");
-
-            Integer userId = sessionUser.getId();
-
-            List<Post> postList = postRepository.findAllPostByUserId(userId);
-            for (Post p : postList)
-            {
-                p.setVoteCount(voteRepository.countVotesByPostId(p.getId()));
-                User user = userRepository.getById(p.getUserId());
-                p.setUserName(user.getUsername());
-            }
-
-            model.addAttribute("user", sessionUser);
-            model.addAttribute("postList", postList);
-            model.addAttribute("loggedIn", sessionUser.getLoggedIn());
-            model.addAttribute("Post", new Post());
-            return model;
+    public Model setupDashboardPage(Model model, HttpServletRequest request) throws Exception {
+        User sessionUser = (User) request.getSession().getAttribute("SESSION_USER");
+        Integer userId = sessionUser.getId();
+        List<Post> postList = postRepository.findAllPostByUserId(userId);
+        for (Post p : postList) {
+            p.setVoteCount(voteRepository.countVotesByPostId(p.getId()));
+            User user = userRepository.getById(p.getUserId());
+            p.setUserName(user.getUsername());
+        }
+        model.addAttribute("user", sessionUser);
+        model.addAttribute("postList", postList);
+        model.addAttribute("loggedIn", sessionUser.getLoggedIn());
+        model.addAttribute("post", new Post());
+        return model;
     }
 
     public Model setupSinglePostPage(int id, Model model, HttpServletRequest request)
